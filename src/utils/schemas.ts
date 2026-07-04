@@ -1,10 +1,13 @@
 import { z } from 'zod';
 
 export const DayContextSchema = z.object({
-  diet: z.string().min(1, "Diet is required"),
+  diet: z.array(z.string()).min(1, "Select at least one diet preference"),
   budget: z.number().positive("Budget must be positive"),
   cookingTime: z.number().positive("Cooking time must be positive"),
-  allergies: z.string(),
+  allergies: z.array(z.string()).optional(),
+  ingredientsToAvoid: z.string().optional(),
+  preferredCuisine: z.string().optional(),
+  additionalNotes: z.string().optional(),
   servings: z.number().int().positive("Servings must be a positive integer"),
 });
 
@@ -13,6 +16,7 @@ export const MealSchema = z.object({
   description: z.string(),
   ingredients: z.array(z.string()),
   prepTime: z.string(),
+  calories: z.number().optional(),
 });
 
 export const MealPlanSchema = z.object({
@@ -34,6 +38,7 @@ export const SubstitutionSchema = z.object({
   ingredient: z.string(),
   substitute: z.string(),
   reason: z.string(),
+  isAllergySafe: z.boolean().optional(),
 });
 
 export const SubstitutionsListSchema = z.array(SubstitutionSchema);

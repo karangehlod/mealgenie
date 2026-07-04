@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Layout } from './components/layout/Layout';
+import { Layout, HeroSection } from './components/layout/Layout';
 import { DayContextForm } from './components/DayContextForm';
+import { DashboardWidgets } from './components/DashboardWidgets';
 import { MealPlanDisplay } from './components/MealPlanDisplay';
 import { GroceryListDisplay } from './components/GroceryListDisplay';
 import { SubstitutionsPanel } from './components/SubstitutionsPanel';
 import { BudgetFeasibility } from './components/BudgetFeasibility';
-import { Spinner, ErrorState, Button } from './components/common/UI';
+import { Spinner, ErrorState, Button, Card } from './components/common/UI';
+import { FadeIn } from './components/common/Animations';
 import { usePlannerStore } from './store/usePlannerStore';
 import { agent } from './services/agent';
+import { RotateCcw, Sparkles } from 'lucide-react';
 
 export default function App() {
   const {
@@ -29,12 +32,11 @@ export default function App() {
 
   const [currentStep, setCurrentStep] = useState<string>('');
 
-  // Step 1: Generate Meal Plan
   useEffect(() => {
     if (dayContext && !mealPlan && !loading && !error) {
       const generate = async () => {
         setLoading(true);
-        setCurrentStep('Generating meal plan...');
+        setCurrentStep('🧑‍🍳 Generating personalized meal plan...');
         try {
           const plan = await agent.generateMealPlan(dayContext);
           setMealPlan(plan);
@@ -49,12 +51,11 @@ export default function App() {
     }
   }, [dayContext, mealPlan, loading, error, setMealPlan, setLoading, setError]);
 
-  // Step 2: Generate Grocery List
   useEffect(() => {
     if (mealPlan && !groceryList && !loading && !error) {
       const generate = async () => {
         setLoading(true);
-        setCurrentStep('Extracting grocery list...');
+        setCurrentStep('🛒 Compiling smart grocery list...');
         try {
           const list = await agent.generateGroceryList(mealPlan);
           setGroceryList(list);
@@ -69,12 +70,11 @@ export default function App() {
     }
   }, [mealPlan, groceryList, loading, error, setGroceryList, setLoading, setError]);
 
-  // Step 3: Get Substitutions
   useEffect(() => {
     if (mealPlan && groceryList && !substitutions && !loading && !error) {
       const generate = async () => {
         setLoading(true);
-        setCurrentStep('Analyzing dietary substitutions...');
+        setCurrentStep('🥦 Analyzing dietary substitutions...');
         try {
           const subs = await agent.getSubstitutions(mealPlan);
           setSubstitutions(subs);
@@ -89,12 +89,11 @@ export default function App() {
     }
   }, [mealPlan, groceryList, substitutions, loading, error, setSubstitutions, setLoading, setError]);
 
-  // Step 4: Check Budget
   useEffect(() => {
     if (groceryList && substitutions && dayContext && !budgetCheck && !loading && !error) {
       const generate = async () => {
         setLoading(true);
-        setCurrentStep('Calculating budget feasibility...');
+        setCurrentStep('💰 Calculating budget feasibility...');
         try {
           const check = await agent.checkBudget(groceryList, dayContext.budget);
           setBudgetCheck(check);
@@ -109,41 +108,58 @@ export default function App() {
     }
   }, [groceryList, substitutions, dayContext, budgetCheck, loading, error, setBudgetCheck, setLoading, setError]);
 
-  const handleRetry = () => {
-    setError(null);
-  };
+  const handleRetry = () => setError(null);
 
   return (
     <Layout>
-      {/* Form is always at the top, if they want to restart */}
       {!dayContext ? (
-        <DayContextForm />
+        <FadeIn>
+          <HeroSection />
+          <DayContextForm />
+        </FadeIn>
       ) : (
-        <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
-          <div className="text-sm font-medium text-gray-700">
-            Planning for: {dayContext.diet} • ${dayContext.budget}/day • {dayContext.servings} servings
+        <FadeIn className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-850 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-100 dark:bg-blue-950/40 p-2 rounded-xl text-blue-600 dark:text-blue-400">
+              <Sparkles size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">Plan Generated</p>
+              <p className="text-xs font-medium text-gray-500 dark:text-slate-400">Based on your custom profile</p>
+            </div>
           </div>
-          <Button variant="secondary" onClick={reset}>Start Over</Button>
-        </div>
+          <Button variant="outline" onClick={reset} className="!py-2">
+            <RotateCcw size={16} className="mr-2" /> Start Over
+          </Button>
+        </FadeIn>
       )}
 
-      <div className="space-y-8 pb-12">
-        {mealPlan && <MealPlanDisplay mealPlan={mealPlan} />}
-        {groceryList && <GroceryListDisplay groceryList={groceryList} />}
-        {substitutions && substitutions.length > 0 && <SubstitutionsPanel substitutions={substitutions} />}
-        {budgetCheck && dayContext && <BudgetFeasibility budgetCheck={budgetCheck} budget={dayContext.budget} />}
+      {dayContext && <DashboardWidgets />}
 
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-12 space-y-4">
-            <Spinner size="lg" />
-            <p className="text-gray-500 font-medium animate-pulse">{currentStep}</p>
-          </div>
-        )}
+      {dayContext && (
+        <div className="space-y-12 pb-16">
+          {mealPlan && <MealPlanDisplay mealPlan={mealPlan} />}
+          {groceryList && <GroceryListDisplay groceryList={groceryList} />}
+          {substitutions && substitutions.length > 0 && <SubstitutionsPanel substitutions={substitutions} />}
+          {budgetCheck && dayContext && <BudgetFeasibility budgetCheck={budgetCheck} budget={dayContext.budget} />}
 
-        {error && (
-          <ErrorState message={error} onRetry={handleRetry} />
-        )}
-      </div>
+          {loading && (
+            <FadeIn>
+              <Card className="flex flex-col items-center justify-center py-16 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border-dashed">
+                <Spinner size="lg" />
+                <p className="mt-6 text-lg font-bold text-gray-700 dark:text-slate-200 animate-pulse">{currentStep}</p>
+                <p className="text-sm text-gray-400 dark:text-slate-500 mt-2 font-medium">Gemini AI is thinking...</p>
+              </Card>
+            </FadeIn>
+          )}
+
+          {error && (
+            <FadeIn>
+              <ErrorState message={error} onRetry={handleRetry} />
+            </FadeIn>
+          )}
+        </div>
+      )}
     </Layout>
   );
 }
