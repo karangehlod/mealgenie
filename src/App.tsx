@@ -10,7 +10,8 @@ import { Spinner, ErrorState, Button, Card } from './components/common/UI';
 import { FadeIn } from './components/common/Animations';
 import { usePlannerStore } from './store/usePlannerStore';
 import { agent } from './services/agent';
-import { RotateCcw, Sparkles } from 'lucide-react';
+import { RotateCcw, Sparkles, Utensils, ShoppingBasket, RefreshCw, Wallet } from 'lucide-react';
+import { cn } from './utils/cn';
 
 export default function App() {
   const {
@@ -31,6 +32,20 @@ export default function App() {
   } = usePlannerStore();
 
   const [currentStep, setCurrentStep] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'mealPlan' | 'groceryList' | 'substitutions' | 'budgetCheck'>('mealPlan');
+
+  // Auto-switch tabs as steps complete
+  useEffect(() => {
+    if (mealPlan && !groceryList) {
+      setActiveTab('mealPlan');
+    } else if (groceryList && !substitutions) {
+      setActiveTab('groceryList');
+    } else if (substitutions && !budgetCheck) {
+      setActiveTab('substitutions');
+    } else if (budgetCheck) {
+      setActiveTab('budgetCheck');
+    }
+  }, [mealPlan, groceryList, substitutions, budgetCheck]);
 
   useEffect(() => {
     if (dayContext && !mealPlan && !loading && !error) {
@@ -110,6 +125,13 @@ export default function App() {
 
   const handleRetry = () => setError(null);
 
+  const tabs = [
+    { id: 'mealPlan', label: 'Meal Plan', icon: Utensils, disabled: !mealPlan },
+    { id: 'groceryList', label: 'Grocery List', icon: ShoppingBasket, disabled: !groceryList },
+    { id: 'substitutions', label: 'Substitutions', icon: RefreshCw, disabled: !substitutions },
+    { id: 'budgetCheck', label: 'Budget Feasibility', icon: Wallet, disabled: !budgetCheck },
+  ] as const;
+
   return (
     <Layout>
       {!dayContext ? (
@@ -118,7 +140,7 @@ export default function App() {
           <DayContextForm />
         </FadeIn>
       ) : (
-        <FadeIn className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-850 mb-8">
+        <FadeIn className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-850 mb-6">
           <div className="flex items-center gap-3">
             <div className="bg-blue-100 dark:bg-blue-950/40 p-2 rounded-xl text-blue-600 dark:text-blue-400">
               <Sparkles size={20} />
@@ -137,18 +159,65 @@ export default function App() {
       {dayContext && <DashboardWidgets />}
 
       {dayContext && (
-        <div className="space-y-12 pb-16">
-          {mealPlan && <MealPlanDisplay mealPlan={mealPlan} />}
-          {groceryList && <GroceryListDisplay groceryList={groceryList} />}
-          {substitutions && substitutions.length > 0 && <SubstitutionsPanel substitutions={substitutions} />}
-          {budgetCheck && dayContext && <BudgetFeasibility budgetCheck={budgetCheck} budget={dayContext.budget} />}
+        <div className="space-y-6 pb-16">
+          {/* Tab Navigation */}
+          {mealPlan && (
+            <div className="flex border-b border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 rounded-2xl shadow-sm gap-1">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    disabled={tab.disabled}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer",
+                      isActive
+                        ? "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shadow-sm"
+                        : "text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-350 hover:bg-gray-50 dark:hover:bg-slate-850/50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    )}
+                  >
+                    <Icon size={18} />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Active Tab Content rendering */}
+          {!loading && (
+            <div className="min-h-[400px]">
+              {activeTab === 'mealPlan' && mealPlan && (
+                <FadeIn>
+                  <MealPlanDisplay mealPlan={mealPlan} />
+                </FadeIn>
+              )}
+              {activeTab === 'groceryList' && groceryList && (
+                <FadeIn>
+                  <GroceryListDisplay groceryList={groceryList} />
+                </FadeIn>
+              )}
+              {activeTab === 'substitutions' && substitutions && substitutions.length > 0 && (
+                <FadeIn>
+                  <SubstitutionsPanel substitutions={substitutions} />
+                </FadeIn>
+              )}
+              {activeTab === 'budgetCheck' && budgetCheck && (
+                <FadeIn>
+                  <BudgetFeasibility budgetCheck={budgetCheck} budget={dayContext.budget} />
+                </FadeIn>
+              )}
+            </div>
+          )}
 
           {loading && (
             <FadeIn>
-              <Card className="flex flex-col items-center justify-center py-16 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border-dashed">
+              <Card className="flex flex-col items-center justify-center py-20 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border-dashed">
                 <Spinner size="lg" />
                 <p className="mt-6 text-lg font-bold text-gray-700 dark:text-slate-200 animate-pulse">{currentStep}</p>
-                <p className="text-sm text-gray-400 dark:text-slate-500 mt-2 font-medium">Gemini AI is thinking...</p>
+                <p className="text-sm text-gray-400 dark:text-slate-500 mt-2 font-medium">Gemini AI is processing...</p>
               </Card>
             </FadeIn>
           )}

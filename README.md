@@ -4,6 +4,17 @@ MealGenie is a production-quality, client-only AI-powered daily cooking planner.
 
 Powered directly by the **Google Gemini API**, MealGenie uses strict Zod schema validation to ensure structured, reliable JSON responses.
 
+<table>
+  <tr>
+    <td align="center"><b>App Preview</b></td>
+    <td align="center"><b>Walkthrough Flow</b></td>
+  </tr>
+  <tr>
+    <td><img src="./public/preview.png" width="400" alt="MealGenie Homepage Setup Form" /></td>
+    <td><img src="./public/walkthrough.webp" width="400" alt="MealGenie App Navigation Walkthrough" /></td>
+  </tr>
+</table>
+
 ---
 
 ## 🚀 Key Features
